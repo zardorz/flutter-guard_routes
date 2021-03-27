@@ -111,18 +111,18 @@ class MyApp extends StatelessWidget {
 ```
 Uma pergunta interessante seria "porque não fazer a gestão de rotas seguras pelo atributo "routes", de uma forma semelhante ao processo do react?"
 
-```react
+```javascript
 	render() {
-		return (
-				<div className="App">
-					<Switch>
-						<Route exact path="/login" component={LoginPage} />
-						<ProtectedRoute path="/" component={MainPage} />
-						<Route path="*" component={() => '404 NOT FOUND'} />
-					</Switch>
-				</div> 
-		);
-	}
+	  return (
+	    <div className="App">
+		<Switch>
+		  <Route exact path="/login" component={LoginPage} />
+		  <ProtectedRoute path="/" component={MainPage} />
+		  <Route path="*" component={() => '404 NOT FOUND'} />
+		</Switch>
+	    </div> 
+	);
+
 ```
 Então, até deve ser possível mas não encontrei nenhuma forma de efetuar isto. A principal razão é que antes de executar as rotas e os métodos seguros eu quero executar um EndPoint (EP) "IsAlive" onde o meu JWT é validado. E onde está o problema? É que o EP é executado de forma asyncrona e o atributo "routes" exige um retorno sincrono (se vc douber como fazer manda o link ;))
 
