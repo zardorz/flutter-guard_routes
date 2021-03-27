@@ -2,16 +2,16 @@
 
 Quando você trabalha com aplicativos que trabalham com dados sensíveis a forma tradicional é implementar algum controle no acesso de forma a identificar que o usuário possui as devidas permissões.
 
-Em um app, por ser um produto geralmente de uso pessoal, não seria diferente sendo este um dos principais requisitos em seu backlog. De froma geral, você pensa "ok, coloco uma tela de login, quardo o token de alguma criptografia e passo ele no Authorization nos requests das apis seguras". Sim, isto esta certo e é sim a forma mais tradicional mas (pelo menos do meu ponto de vista, você é livre para discordar e complementar essa visão) no flutter devido ao seu ciclo de vida é um pouco mais chato garantir que o usuário está autorizado e/ou que a própria sessão está ativa. Abaixo as premissas desta implementação:
+Em um app, por ser um produto geralmente de uso pessoal, não seria diferente sendo este um dos principais requisitos em seu backlog. De froma geral, você pensa "ok, coloco uma tela de login, guardo o token usando  alguma criptografia e passo ele no "Authorization" nos requests das apis seguras". Sim, esta é a forma mais tradicional mas (pelo menos do meu ponto de vista, você é livre para discordar e complementar essa visão) no flutter devido ao seu ciclo de vida é um pouco mais chato garantir que o usuário está autorizado e/ou que a própria sessão está ativa. Abaixo as premissas desta implementação:
 
 * Somente usuários autenticados e com sessão ativa podem acessar as rotas seguras
 * Redirecionar o usuário para telas específicas conforme o estado da autenticação/session do usuário
 * Trabalhar com os seguintes estados da autenticação:
-** Uninitialized : Não inicializado, redireciona para a tela de splash. Isto pode ser feito apenas na primeira execução ou sempre que houver alguma novidade no app. Vai muito do RoadMap da aplicação. Neste artigo ele será executado sempre o app enrtar em memoria/primeira execução;
-** Unauthenticated: Não autenticado, redireciona para a tela de login
-** Authenticating: Em autenticação, geralmente ele efetuou o request para a API e está aguardando o retorno da mesma. É um estado intermediário;
-** Authenticated: Autenticado e possui token JWT. Aqui não é possivel garantir que o token tenha expirado (motivo deste artigo)
-** Expired: O token é invalido. redirecionar para a tela de "Login Expirado!" e após clicar no "OK" redirecionar para a tela de "Login"
+  * Uninitialized : Não inicializado, redireciona para a tela de splash. Isto pode ser feito apenas na primeira execução ou sempre que houver alguma novidade no app. Vai muito do RoadMap da aplicação. Neste artigo ele será executado sempre o app enrtar em memoria/primeira execução;
+  * Unauthenticated: Não autenticado, redireciona para a tela de login
+  * Authenticating: Em autenticação, geralmente ele efetuou o request para a API e está aguardando o retorno da mesma. É um estado intermediário;
+  * Authenticated: Autenticado e possui token JWT. Aqui não é possivel garantir que o token tenha expirado (motivo deste artigo)
+  * Expired: O token é invalido. redirecionar para a tela de "Login Expirado!" e após clicar no "OK" redirecionar para a tela de "Login"
 
 ## Como fazer da forma simples
 
@@ -44,11 +44,12 @@ Se você poucas telas (aqui quero dizer poucas mesmo rs) você pode implementar 
         builder: (context, snapshot) {
           if (snapshot.hasData) {
 ....
- ```dart
 
-Ou seja, a sua tela foi montada e você terá que fazer a gestão do retorno com a tela em exibição e, pior, para cada tela do seu app. 
+```
 
-A solução prosposta ajuda a resolver esta e ourtas questões (aguarde outros artigos rs) de uma forma elegante, relativemnte simples, e com implementação em apenas um lugar. Claro, você pode usar o DIO ou outro objeto como o http_interceptor mas eles resolvem apenas uma parte do problema.
+Ou seja, a sua tela foi montada e você terá que fazer a gestão do retorno com a tela em exibição e pior, para cada tela do seu app. 
+
+A solução prosposta ajuda a resolver esta e outras questões (aguarde outros artigos rs) de uma forma elegante, relativemnte simples, e com implementação em apenas um lugar. Claro, você pode usar o DIO ou outro objeto como o http_interceptor mas eles resolvem apenas uma parte do problema.
 
 Bom, vamos a solução proposta
 
