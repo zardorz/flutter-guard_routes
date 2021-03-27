@@ -57,3 +57,7 @@ Bom, vamos a solução proposta
 
 Abaixo um fluxo da arquitetura implementada
 
+![image](https://user-images.githubusercontent.com/10378151/112722630-76684080-8ee9-11eb-829b-421e2ea082cb.png)
+
+Como é possível notar a classe "Home" é a responsável pela validação do estado sa sessão e seu correto redirecionamento as páginas core (login, splash, sessão expirada, avisos, etc) e da exibição do conteudo de "Dashboard', ou seja, do conteudo default do app. Apesar de estar sendo representado como duas páginas, é a mesma classe sendo que o DashBoard é a a view e a gestão dos estados é da classe.
+
