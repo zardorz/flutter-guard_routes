@@ -11,7 +11,7 @@ Em um app, por ser um produto geralmente de uso pessoal, não seria diferente se
   * Unauthenticated: Não autenticado, redireciona para a tela de login
   * Authenticating: Em autenticação, geralmente ele efetuou o request para a API e está aguardando o retorno da mesma. É um estado intermediário;
   * Authenticated: Autenticado e possui token JWT. Aqui não é possivel garantir que o token tenha expirado (motivo deste artigo)
-  * Expired: O token é invalido. redirecionar para a tela de "Login Expirado!" e após clicar no "OK" redirecionar para a tela de "Login"
+  * Expired: O token é inválido. Redirecionar para a tela de "Login Expirado!" e após clicar no "OK" redirecionar para a tela de "Login"
 
 ## Como fazer da forma simples
 
