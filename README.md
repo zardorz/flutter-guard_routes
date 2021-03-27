@@ -57,7 +57,141 @@ Bom, vamos a solução proposta
 
 Abaixo um fluxo da arquitetura implementada
 
-![image](https://user-images.githubusercontent.com/10378151/112722630-76684080-8ee9-11eb-829b-421e2ea082cb.png)
+![image](https://user-images.githubusercontent.com/10378151/112729430-cc011500-8f0a-11eb-8e89-22cc5a56de98.png)
 
-Como é possível notar a classe "Home" é a responsável pela validação do estado sa sessão e seu correto redirecionamento as páginas core (login, splash, sessão expirada, avisos, etc) e da exibição do conteudo de "Dashboard', ou seja, do conteudo default do app. Apesar de estar sendo representado como duas páginas, é a mesma classe sendo que o DashBoard é a a view e a gestão dos estados é da classe.
+Quando o app é iniciado a classe main é executada por padrão, dentro do fluxo normal. Nesta classe é realizado a inicialização dos providers (repositórios), da classe Auth (responsável pelo controle da sessão e armazenagem segura do JWT) e a atribuição da lista de rotas ao "MaterialApp". 
+
+```dart
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    // final GlobalKey<NavigatorState> navigator = new GlobalKey<NavigatorState>();
+
+    return FutureBuilder(
+      future: Auth.create(),
+      // initialData: InitialData,
+      builder: (BuildContext context, AsyncSnapshot snapshot) {
+        if (Auth() == null) {
+          return Container(
+            // margin: EdgeInsets.only(top: 50, bottom: 0),
+            child: Center(
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+              ),
+            ),
+          );
+        } else {
+          return MultiProvider(
+            providers: [
+              ChangeNotifierProvider(
+                create: (_) => CategoriesRepository(),
+              ),
+              ChangeNotifierProvider(
+                create: (_) => FinanceAccountsRepository(),
+              ),
+              ChangeNotifierProvider(
+                create: (_) => Auth(),
+              ),
+              ChangeNotifierProvider(
+                create: (ctx) => StatementsRepository(),
+              ),
+              ChangeNotifierProvider(
+                create: (ctx) => UsersRepository(),
+              ),
+            ],
+            child: MaterialApp(
+              debugShowCheckedModeBanner: false,
+              title: 'Flutter Demo',
+              theme: theme(), 
+              routes: routes, 
+            ),
+          );
+        }
+
+```
+Uma pergunta interessante seria "porque não fazer a gestão de rotas seguras pelo atributo "routes", de uma forma semelhante ao processo do react?"
+
+```react
+	render() {
+		return (
+				<div className="App">
+					<Switch>
+						<Route exact path="/login" component={LoginPage} />
+						<ProtectedRoute path="/" component={MainPage} />
+						<Route path="*" component={() => '404 NOT FOUND'} />
+					</Switch>
+				</div> 
+		);
+	}
+```
+Então, até deve ser possível mas não encontrei nenhuma forma de efetuar isto. A principal razão é que antes de executar as rotas e os métodos seguros eu quero executar um EndPoint (EP) "IsAlive" onde o meu JWT é validado. E onde está o problema? É que o EP é executado de forma asyncrona e o atributo "routes" exige um retorno sincrono (se vc douber como fazer manda o link ;))
+
+Voltando ao fluxo.Por padrão após a execução e executada a rota "/home" ( ou "/"  conforme sua configuração).  Pela análise inicial do código é possível observar que a mesma executa um Future<bool> do "IsAlive" que um EP seguro exigindo o JWT. Se o mesmo tiver expirado retorna false, caso contrário true.
+ 
+ ```react
+ return FutureBuilder<bool>(
+        future: isAliveFuture,
+        builder: (BuildContext context, snapshot) {
+          if (snapshot.hasData) {
+            return validSession();
+          } else if (snapshot.hasError) {
+            return Text("${snapshot.error}");
+          }
+          
+```          
+ e o método "validSession" efetua a orquestração necessária
+ 
+ ```dart
+   WillPopScope validSession() {
+    switch (auth.userStatus) {
+      case Status.Unauthenticated: 
+          SchedulerBinding.instance.addPostFrameCallback((_) {
+            Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => SignInView()));
+          }); 
+
+        break; 
+      case Status.Expired: 
+          SchedulerBinding.instance.addPostFrameCallback((_) {
+            Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => ExpiredSessionView()));
+          }); 
+        break;
+
+      default:
+        break;
+    }
+
+    return _willPopScope();
+  }
+ ```
+ 
+Ok, ate agora está tudo cert mas como é feito a mudança no estado da sessão pela simples chamada do "IsAlive"? Aqui tem outra pegadinha (como falei acima, vc pode usar outras formas). Foi criada uma classe "AuthenticatedHttpClient" que extende "http.BaseClient" onde todos os repositórios instanciam para a chamada dos EP's. No método "send" ela "injeta" o JWT e efetua o "request" na API. Como retorno temos um "StreamedResponse" que permite ler o "statusCode". Agora ficou facil não? (é um form"invertida" podemos dizer de colocar um interceptor (ok, eu sei que não é rs) visto que o objeto http padrão do Dart não fornece uma forma direta para isto.
+ 
+Lendo o "StatusCode" vc pode fazer a orquestração do que desejar em um único local.
+
+
+ ```dart
+class AuthenticatedHttpClient extends http.BaseClient {
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    var acc =  Auth().accessToken;
+    // var acc1 = await userAccessToken;
+
+    request.headers.putIfAbsent('Accept', () => 'application/json');
+    request.headers.putIfAbsent('content-type', () => 'application/json');
+    request.headers.putIfAbsent('Authorization', () => acc);
+
+    final StreamedResponse response = await request.send();
+
+    if (response.statusCode == 401) await new Auth().expireSession();
+
+    return response;
+  }
+}
+ ```
+
+![image](https://user-images.githubusercontent.com/10378151/112729440-da4f3100-8f0a-11eb-871f-8eec8facbc56.png)
+
+
+De uma forma "bem resumida" é isto. Altem precisa ser feitas alguma refatorações mas o caminho é este. E você como fez a gestão de seuas rotas?
 
