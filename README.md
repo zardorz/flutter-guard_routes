@@ -67,15 +67,12 @@ Quando o app é iniciado a classe main é executada por padrão, dentro do fluxo
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    // final GlobalKey<NavigatorState> navigator = new GlobalKey<NavigatorState>();
 
     return FutureBuilder(
       future: Auth.create(),
-      // initialData: InitialData,
       builder: (BuildContext context, AsyncSnapshot snapshot) {
         if (Auth() == null) {
           return Container(
-            // margin: EdgeInsets.only(top: 50, bottom: 0),
             child: Center(
               child: CircularProgressIndicator(
                 strokeWidth: 2,
@@ -177,8 +174,7 @@ class AuthenticatedHttpClient extends http.BaseClient {
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
-    var acc =  Auth().accessToken;
-    // var acc1 = await userAccessToken;
+    var acc =  Auth().accessToken; 
 
     request.headers.putIfAbsent('Accept', () => 'application/json');
     request.headers.putIfAbsent('content-type', () => 'application/json');
