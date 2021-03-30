@@ -127,7 +127,7 @@ Então, até deve ser possível mas não encontrei nenhuma forma de efetuar isto
 
 Voltando ao fluxo...por padrão é executada a rota "/home" ( ou "/"  conforme sua configuração).  Pela análise inicial do código é possível observar que a mesma executa um Future<bool> do "IsAlive" que é um EP seguro exigindo o JWT. Se o mesmo tiver expirado retorna false, caso contrário true.
  
- ```react
+ ```javascript
  return FutureBuilder<bool>(
         future: isAliveFuture,
         builder: (BuildContext context, snapshot) {
