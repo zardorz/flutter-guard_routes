@@ -2,7 +2,9 @@
 
 Quando você trabalha com aplicativos que trabalham com dados sensíveis a forma tradicional é implementar algum controle no acesso de forma a identificar que o usuário possui as devidas permissões.
 
-Em um app, por ser um produto geralmente de uso pessoal, não seria diferente sendo este um dos principais requisitos em seu backlog. De froma geral, você pensa "ok, coloco uma tela de login, guardo o token usando  alguma criptografia e passo ele no "Authorization" nos requests das apis seguras". Sim, esta é a forma mais tradicional mas (pelo menos do meu ponto de vista, você é livre para discordar e complementar essa visão) no flutter devido ao seu ciclo de vida é um pouco mais chato garantir que o usuário está autorizado e/ou que a própria sessão está ativa. Abaixo as premissas desta implementação:
+Em um app, por ser um produto geralmente de uso pessoal, não seria diferente sendo este um dos principais requisitos em seu backlog. De forma geral, você pensa "ok, coloco uma tela de login, guardo o token usando protegido por alguma criptografia (ou serviço como o firebase) e passo ele no "Authorization" nos requests das apis seguras". Sim, esta é a forma mais utilizada mas (pelo menos do meu ponto de vista, você é livre para discordar e complementar essa visão) no flutter devido ao seu ciclo de vida é um pouco mais "chato" garantir que o usuário está autorizado e/ou que a própria sessão está ativa.  
+
+Abaixo as premissas desta implementação:
 
 * Somente usuários autenticados e com sessão ativa podem acessar as rotas seguras
 * Redirecionar o usuário para telas específicas conforme o estado da autenticação/session do usuário
@@ -15,7 +17,7 @@ Em um app, por ser um produto geralmente de uso pessoal, não seria diferente se
 
 ## Como fazer da forma simples
 
-Se você poucas telas (aqui quero dizer poucas mesmo rs) você pode implementar no resultado de seu "Buid:Future<T>" a verificação do estado atual contra a lista de estado da autenticação e redirecionar para a tela correspondente. É obivio que está é uma solução simplista, valido para um app co duas telas, para uma POC etc. No caso de uma aplicação real, com várias telas o ideal é fazer um interceptor do response e, se o código for diferente de 200 jogar para uma classe especializada. Bom, isto funciona bem no Angular (canActivate), no React (na mão mesmo) e até n oandroid nativo mas, no Flutter, a menos que vc esteja usando um padrão mvc, mvvm, ou outro qualquer, a requisição da sua api segura foi feita na criação do seu build.
+Se você poucas telas (aqui quero dizer poucas mesmo) você pode implementar no resultado de seu "Buid:Future<T>" a verificação do estado atual contra a lista de estado da autenticação e redirecionar para a tela correspondente. É obvio que está é uma solução simplista, válido para um app com poquissimas telas, para uma POC etc. No caso de uma aplicação real, com várias telas o ideal é fazer um interceptor do response e, se o StatusCode for diferente de "200-OK" jogar para uma classe especializada. Bom, isto funciona bem no Angular (canActivate), no React (na mão mesmo) e até no android mas, no Flutter, a menos que vc esteja usando um padrão mvc, mvvm, ou outro qualquer, a requisição da sua api segura foi feita na criação do seu build.
   
  ```dart
  class _StatementsView extends State<StatementsView> {
@@ -124,9 +126,9 @@ Uma pergunta interessante seria "porque não fazer a gestão de rotas seguras pe
 	);
 
 ```
-Então, até deve ser possível mas não encontrei nenhuma forma de efetuar isto. A principal razão é que antes de executar as rotas e os métodos seguros eu quero executar um EndPoint (EP) "IsAlive" onde o meu JWT é validado. E onde está o problema? É que o EP é executado de forma asyncrona e o atributo "routes" exige um retorno sincrono (se vc douber como fazer manda o link ;))
+Então, até deve ser possível mas não encontrei nenhuma forma de efetuar isto. A principal razão é que antes de executar as rotas e os métodos seguros eu quero executar um EndPoint (EP) "IsAlive" onde o meu JWT é validado. E onde está o problema? É que o EP é executado de forma asyncrona e o atributo "routes" exige um retorno sincrono (se vc souber como fazer manda o link ;))
 
-Voltando ao fluxo.Por padrão após a execução e executada a rota "/home" ( ou "/"  conforme sua configuração).  Pela análise inicial do código é possível observar que a mesma executa um Future<bool> do "IsAlive" que um EP seguro exigindo o JWT. Se o mesmo tiver expirado retorna false, caso contrário true.
+Voltando ao fluxo...por padrão é executada a rota "/home" ( ou "/"  conforme sua configuração).  Pela análise inicial do código é possível observar que a mesma executa um Future<bool> do "IsAlive" que é um EP seguro exigindo o JWT. Se o mesmo tiver expirado retorna false, caso contrário true.
  
  ```react
  return FutureBuilder<bool>(
@@ -163,10 +165,11 @@ Voltando ao fluxo.Por padrão após a execução e executada a rota "/home" ( ou
     return _willPopScope();
   }
  ```
+Antes que você comece a jogar pedras e me chamr de gerege, sim, todos os EP's sensíveis validam o tokem, a questão aqui é naço desejar que a tela faca a gestão do retorno 401, 404, 500,... e sim um processo controlado, único e de fácil extensão, que n~çao gere overhead ou chamadas duplas tanto da api quanto de telas (rotas). Tudo tem desvantagens mas o foco deste artigo é mostrar as vantagens que identifiquei usando esta arquitetura. Ela ainda vai ser evoluida, ainda está em sua primeira versão ;)
+
+Ok, até agora está tudo certo mas, como é feito a mudança no estado da sessão pela simples chamada do "IsAlive"? Aqui tem outra pegadinha (como falei acima, vc pode usar outras formas). Foi criada uma classe "AuthenticatedHttpClient" que extende "http.BaseClient" onde todos os repositórios instanciam para a chamada dos EP's. No método "send" ela "injeta" o JWT e efetua o "request" na API. Como retorno temos um "StreamedResponse" que permite ler o "statusCode". Agora ficou fácil não? Poderiamos dizer que é uma forma "invertida" de colocar um interceptor (ok, eu sei que não é rs) visto que o objeto http padrão do Dart não fornece uma forma direta para isto.
  
-Ok, ate agora está tudo cert mas como é feito a mudança no estado da sessão pela simples chamada do "IsAlive"? Aqui tem outra pegadinha (como falei acima, vc pode usar outras formas). Foi criada uma classe "AuthenticatedHttpClient" que extende "http.BaseClient" onde todos os repositórios instanciam para a chamada dos EP's. No método "send" ela "injeta" o JWT e efetua o "request" na API. Como retorno temos um "StreamedResponse" que permite ler o "statusCode". Agora ficou facil não? (é um form"invertida" podemos dizer de colocar um interceptor (ok, eu sei que não é rs) visto que o objeto http padrão do Dart não fornece uma forma direta para isto.
- 
-Lendo o "StatusCode" vc pode fazer a orquestração do que desejar em um único local.
+Lendo o "StatusCode" você pode fazer a orquestração do que desejar em um único local.
 
 
  ```dart
@@ -193,5 +196,5 @@ class AuthenticatedHttpClient extends http.BaseClient {
 ![image](https://user-images.githubusercontent.com/10378151/112729440-da4f3100-8f0a-11eb-871f-8eec8facbc56.png)
 
 
-De uma forma "bem resumida" é isto. Altem precisa ser feitas alguma refatorações mas o caminho é este. E você como fez a gestão de seuas rotas?
+De uma forma "bem resumida" é isto. Ainda tremos várias refatorações neste princípio mas o caminho é este. E você como fez a gestão de seuas rotas?
 
